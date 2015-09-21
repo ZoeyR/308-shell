@@ -8,61 +8,39 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "cmd.h"
+#include "process.h"
 
-const char* EXIT = "exit";
-const char* PID = "pid";
-const char* PPID = "ppid";
-const char* CD = "cd";
-const char* PWD = "pwd";
-const char* SET = "set";
-const char* GET = "get";
+static int run_builtin(command_t* cmd);
+static int run_extern(command_t* cmd);
 
-static int run_builtin(char* cmd);
-static int run_extern(char* cmd);
+int run_command(command_t* cmd) {
 
-int run_command(char* cmd) {
-  char* copy_cmd = (char*)malloc(strlen(cmd) * sizeof(char));
-  strcpy(copy_cmd, cmd);
-
-  if (run_builtin(copy_cmd) == 0) {
+  if (run_builtin(cmd) == 0) {
     return 0;
   }
-  free(copy_cmd);
 
   run_extern(cmd);
   return 0;
 }
 
-static int run_builtin(char* cmd) {
-  char* first_part = strtok(cmd, " ");
-
+static int run_builtin(command_t* cmd) {
+  char* first_part = cmd->bin;
+  cmd_args_t args = cmd->args;
   if (first_part != NULL) {
     if (strcmp(first_part, EXIT) == 0) {
       exit(0);
     } else if (strcmp(first_part, PID) == 0) {
-      printf("%d\n", getpid());
+      sh_pid();
     } else if (strcmp(first_part, PPID) == 0) {
-      printf("%d\n", getppid());
+      sh_ppid();
     } else if (strcmp(first_part, CD) == 0) {
-      char* dir = strtok(NULL, "");
-      if (dir == NULL) {
-        dir = getenv("HOME");
-      }
-
-      chdir(dir);
+      sh_cd(args);
     } else if (strcmp(first_part, PWD) == 0) {
-      char* cwd = getcwd(NULL, 0);
-      printf("%s\n", cwd);
-      free(cwd);
+      sh_pwd();
     } else if (strcmp(first_part, SET) == 0) {
-      char* var = strtok(NULL, " ");
-      char* val = strtok(NULL, "");
-      setenv(var, val, true);
+      sh_set(args);
     } else if (strcmp(first_part, GET) == 0) {
-      char* var = strtok(NULL, "");
-      char* val = getenv(var);
-
-      printf("%s\n", val);
+      sh_get(args);
     } else {
       return 1;
     }
@@ -71,16 +49,19 @@ static int run_builtin(char* cmd) {
   return 0;
 }
 
-static int run_extern(char* cmd) {
-  bool run_bg;
+static int run_extern(command_t* cmd) {
+  launch_process(cmd);
+
+  return 0;
+}
+
+command_t make_command(char* input) {
   int arg_length = 5;
-  char* bin = strtok(cmd, " ");
-  char** options = (char**)malloc(arg_length * sizeof(intptr_t));
-  char* param;
-
+  char* bin = strtok(input, " ");
+  char** options = (char**)malloc(arg_length * sizeof(char*));
   options[0] = bin;
-
   int i;
+  char* param;
   for(i = 1; (param = strtok(NULL, " ")) != NULL; i++) {
     options[i] = param;
 
@@ -89,42 +70,13 @@ static int run_extern(char* cmd) {
       options = (char**)realloc(options, arg_length * sizeof(char*));
     }
   }
+  options[i] = NULL;
 
-  // check if the last character was an ampersand
-  if (strcmp(options[i - 1], "&") == 0) {
-    run_bg = true;
-    options[i - 1] = NULL;
-  } else {
-    run_bg = false;
-    options[i] = NULL;
-  }
+  cmd_args_t args = {.args = options, .size = i};
+  command_t cmd = {.bin = bin, .args = args};
+  return cmd;
+}
 
-  pid_t pid = fork();
-  if (pid) {
-    //This is the parent process
-    int status;
-
-    if (!run_bg) {
-      waitpid(pid, &status, 0);
-      if (WIFEXITED(status)) {
-        printf("%s Exit: %d\n", bin, WEXITSTATUS(status));
-      } else if (WIFSIGNALED(status)) {
-        printf("%s Killed: %d\n", bin, WEXITSTATUS(status));
-      }
-    }
-  } else {
-    // This is the child process
-    printf("PID: [%d]\n", getpid());
-
-    execvp(bin, options);
-    if (errno == ENOENT) {
-      printf("Error: %s: command not found\n", bin);
-      exit(1);
-    } else if (errno) {
-      printf("Error: %d: %s\n", errno, strerror(errno));
-      exit(1);
-    }
-  }
-
-  return 0;
+void free_command(command_t* cmd) {
+  free(cmd->args.args);
 }

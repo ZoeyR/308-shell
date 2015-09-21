@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include "io.h"
 
-// This function fills a string buffer with the input from stdin up to but not including
-// the newline character. This function will realloc buffer as necessary to fit all
-// characters from stdin
-char* get_line(const char* prompt, char* buffer) {
+// This function returns a command entered by the user on the command line not
+// including the newline character. The string will be large enough to contain
+// all the text entered by the user, the string returned must be free'd.
+char* get_line(const char* prompt) {
   printf("%s", prompt);
   char c = 0;
   size_t i = 0;
   size_t stringlen = 10;
-  buffer = (char*)realloc(buffer, stringlen * sizeof(char));
+  char* buffer = (char*)malloc(stringlen * sizeof(char));
 
   while ((c = getc(stdin)) != '\n') {
     buffer[i++] = c;
