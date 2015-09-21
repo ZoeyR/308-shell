@@ -21,7 +21,7 @@ typedef struct {
   cmd_args_t args;
 } command_t;
 
-int run_command(command_t* cmd);
+void run_command(command_t* cmd);
 
 void sh_exit();
 void sh_pid();

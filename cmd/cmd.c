@@ -11,16 +11,14 @@
 #include "process.h"
 
 static int run_builtin(command_t* cmd);
-static int run_extern(command_t* cmd);
 
-int run_command(command_t* cmd) {
+void run_command(command_t* cmd) {
 
   if (run_builtin(cmd) == 0) {
-    return 0;
+    return;
   }
 
-  run_extern(cmd);
-  return 0;
+  launch_process(cmd);
 }
 
 static int run_builtin(command_t* cmd) {
@@ -49,16 +47,11 @@ static int run_builtin(command_t* cmd) {
   return 0;
 }
 
-static int run_extern(command_t* cmd) {
-  launch_process(cmd);
-
-  return 0;
-}
-
 command_t make_command(char* input) {
   int arg_length = 5;
   char* bin = strtok(input, " ");
   char** options = (char**)malloc(arg_length * sizeof(char*));
+
   options[0] = bin;
   int i;
   char* param;
