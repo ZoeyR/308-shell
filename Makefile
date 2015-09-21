@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -O3
+CFLAGS = -O3
 
 HEADERDIR = ./include
 SRCFILES = $(wildcard ./**/*.c)
