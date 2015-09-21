@@ -35,11 +35,11 @@ void sh_pwd() {
 }
 
 void sh_set(cmd_args_t args) {
-  setenv(args.args[0], args.args[1], true);
+  setenv(args.args[1], args.args[2], true);
 }
 
 void sh_get(cmd_args_t args) {
-  char* val = getenv(args.args[0]);
+  char* val = getenv(args.args[1]);
 
   if (val == NULL) {
     printf("(NULL)\n");
