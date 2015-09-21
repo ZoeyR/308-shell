@@ -11,4 +11,8 @@
   the user to enter more commands.
   */
 void launch_process(command_t* command);
+
+char* get_child_name(pid_t pid);
+
+void print_children();
 #endif
